@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="pry">
+  <title>pry</title>
+  <defs>
+    <linearGradient id="bg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="512"><stop offset="0" stop-color="#161B22"/><stop offset="1" stop-color="#0B0E13"/></linearGradient>
+    <linearGradient id="amber" gradientUnits="userSpaceOnUse" x1="120" y1="70" x2="400" y2="440"><stop offset="0" stop-color="#FFC53D"/><stop offset="1" stop-color="#FF7A1A"/></linearGradient>
+    <mask id="cut" maskUnits="userSpaceOnUse" x="102" y="46" width="308" height="448">
+      <rect x="102" y="46" width="308" height="448" fill="#fff"/>
+      <polygon points="130,437 190,437 130,400.04" fill="#000"/>
+      <polygon points="235.8,284.4 235.8,307.6 261.16,296" fill="#000"/>
+    </mask>
+  </defs>
+  
+  <path d="M160,436 L160,200 A96,96 0 1 1 256,296 L236.8,296" fill="none" stroke="url(#amber)" stroke-width="58" stroke-linejoin="round" mask="url(#cut)"/>
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="pry">
+  <title>pry</title>
+  <defs>
+    <linearGradient id="bg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="1024"><stop offset="0" stop-color="#161B22"/><stop offset="1" stop-color="#0B0E13"/></linearGradient>
+    <linearGradient id="bx" gradientUnits="userSpaceOnUse" x1="204.8" y1="0" x2="819.2" y2="0"><stop offset="0" stop-color="#FFC53D"/><stop offset="1" stop-color="#FF7A1A"/></linearGradient>
+    <linearGradient id="pg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="130" y2="200"><stop offset="0" stop-color="#FFC53D"/><stop offset="1" stop-color="#FF7A1A"/></linearGradient><mask id="pm" maskUnits="userSpaceOnUse" x="-15" y="-15" width="160" height="245">
+      <rect x="-15" y="-15" width="160" height="245" fill="#fff"/>
+      <polygon points="-1,201 31,201 -1,181.4" fill="#000"/>
+      <polygon points="54,109 54,121 67.6,115" fill="#000"/>
+    </mask>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <g transform="translate(204.8 303.07) scale(1.69)">
+    <path d="M15,200 L15,65 A50,50 0 1 1 65,115 L55,115" fill="none" stroke="url(#pg)" stroke-width="30" stroke-linejoin="round" mask="url(#pm)"/>
+    <path d="M165,130 V57 A42,42 0 0 1 207,15 H223" fill="none" stroke="#F0F3F6" stroke-width="30"/>
+    <path d="M249,0 V65 A50,50 0 0 0 349,65" fill="none" stroke="#F0F3F6" stroke-width="30"/>
+    <polygon points="334,0 364,0 364,200 334,181.4" fill="#F0F3F6"/>
+  </g>
+  <rect x="204.8" y="712.33" width="25.78" height="8.59" rx="4.3" fill="url(#bx)" opacity="0.71"/><rect x="240.6" y="712.33" width="25.78" height="8.59" rx="4.3" fill="url(#bx)" opacity="0.72"/><rect x="276.41" y="712.33" width="25.78" height="8.59" rx="4.3" fill="url(#bx)" opacity="0.76"/><rect x="312.21" y="712.33" width="25.78" height="8.59" rx="4.3" fill="url(#bx)" opacity="0.75"/><rect x="365.2" y="712.33" width="25.78" height="8.59" rx="4.3" fill="url(#bx)" opacity="0.91"/><rect x="401.01" y="712.33" width="25.78" height="8.59" rx="4.3" fill="url(#bx)" opacity="0.72"/><rect x="436.81" y="712.33" width="25.78" height="8.59" rx="4.3" fill="url(#bx)" opacity="0.45"/><rect x="472.62" y="712.33" width="25.78" height="8.59" rx="4.3" fill="url(#bx)" opacity="0.72"/><rect x="525.61" y="712.33" width="25.78" height="8.59" rx="4.3" fill="url(#bx)" opacity="0.76"/><rect x="561.41" y="712.33" width="25.78" height="8.59" rx="4.3" fill="url(#bx)" opacity="0.67"/><rect x="597.21" y="712.33" width="25.78" height="8.59" rx="4.3" fill="url(#bx)" opacity="0.69"/><rect x="633.02" y="712.33" width="25.78" height="8.59" rx="4.3" fill="url(#bx)" opacity="0.91"/><rect x="686.01" y="712.33" width="25.78" height="8.59" rx="4.3" fill="url(#bx)" opacity="0.65"/><rect x="721.81" y="712.33" width="25.78" height="8.59" rx="4.3" fill="url(#bx)" opacity="0.8"/><rect x="757.62" y="712.33" width="25.78" height="8.59" rx="4.3" fill="url(#bx)" opacity="0.81"/><rect x="793.42" y="712.33" width="25.78" height="8.59" rx="4.3" fill="url(#bx)" opacity="0.5"/>
+</svg>

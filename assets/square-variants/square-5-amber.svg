@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="pry">
+  <title>pry</title>
+  <defs>
+    <linearGradient id="bg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1024" y2="1024"><stop offset="0" stop-color="#FFC53D"/><stop offset="1" stop-color="#FF7A1A"/></linearGradient>
+    <linearGradient id="bx" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1024" y2="0"><stop offset="0" stop-color="#FFC53D"/><stop offset="1" stop-color="#FF7A1A"/></linearGradient>
+    <linearGradient id="pg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="130" y2="200"><stop offset="0" stop-color="#0E1116"/><stop offset="1" stop-color="#0E1116"/></linearGradient><mask id="pm" maskUnits="userSpaceOnUse" x="-15" y="-15" width="160" height="245">
+      <rect x="-15" y="-15" width="160" height="245" fill="#fff"/>
+      <polygon points="-1,201 31,201 -1,181.4" fill="#000"/>
+      <polygon points="54,109 54,121 67.6,115" fill="#000"/>
+    </mask>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <g transform="translate(182 286.07) scale(1.81)"><path d="M15,200 L15,65 A50,50 0 1 1 65,115 L55,115" fill="none" stroke="url(#pg)" stroke-width="30" stroke-linejoin="round" mask="url(#pm)"/>
+    <path d="M165,130 V57 A42,42 0 0 1 207,15 H223" fill="none" stroke="#0E1116" stroke-width="30"/>
+    <path d="M249,0 V65 A50,50 0 0 0 349,65" fill="none" stroke="#0E1116" stroke-width="30"/>
+    <polygon points="334,0 364,0 364,200 334,181.4" fill="#0E1116"/></g><rect x="182" y="728.7" width="27.69" height="9.23" rx="4.62" fill="#0E1116" opacity="0.657"/><rect x="220.46" y="728.7" width="27.69" height="9.23" rx="4.62" fill="#0E1116" opacity="0.668"/><rect x="258.92" y="728.7" width="27.69" height="9.23" rx="4.62" fill="#0E1116" opacity="0.715"/><rect x="297.38" y="728.7" width="27.69" height="9.23" rx="4.62" fill="#0E1116" opacity="0.704"/><rect x="354.31" y="728.7" width="27.69" height="9.23" rx="4.62" fill="#0E1116" opacity="0.86"/><rect x="392.77" y="728.7" width="27.69" height="9.23" rx="4.62" fill="#0E1116" opacity="0.673"/><rect x="431.23" y="728.7" width="27.69" height="9.23" rx="4.62" fill="#0E1116" opacity="0.398"/><rect x="469.69" y="728.7" width="27.69" height="9.23" rx="4.62" fill="#0E1116" opacity="0.668"/><rect x="526.62" y="728.7" width="27.69" height="9.23" rx="4.62" fill="#0E1116" opacity="0.715"/><rect x="565.08" y="728.7" width="27.69" height="9.23" rx="4.62" fill="#0E1116" opacity="0.62"/><rect x="603.54" y="728.7" width="27.69" height="9.23" rx="4.62" fill="#0E1116" opacity="0.638"/><rect x="642" y="728.7" width="27.69" height="9.23" rx="4.62" fill="#0E1116" opacity="0.856"/><rect x="698.92" y="728.7" width="27.69" height="9.23" rx="4.62" fill="#0E1116" opacity="0.602"/><rect x="737.38" y="728.7" width="27.69" height="9.23" rx="4.62" fill="#0E1116" opacity="0.752"/><rect x="775.85" y="728.7" width="27.69" height="9.23" rx="4.62" fill="#0E1116" opacity="0.759"/><rect x="814.31" y="728.7" width="27.69" height="9.23" rx="4.62" fill="#0E1116" opacity="0.446"/>
+</svg>

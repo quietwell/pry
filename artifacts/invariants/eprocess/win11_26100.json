@@ -1,0 +1,16 @@
+{
+  "build": "26100",
+  "arch": "x64",
+  "type_name": "_EPROCESS",
+  "note": "Windows 11 24H2 (26100). Stub file — null-valued offsets are placeholders (no trusted pdbex/vergilius dump reachable from the chunk's environment). The loader skips nulls and falls back to the live PDB, then the InvariantFieldFinder. Only the DISPATCHER_HEADER anchor (KOBJECTS::ProcessObject == 0x03) is verified from first principles.",
+  "eprocess": {
+    "UniqueProcessId":    {"offset": null, "size": 8,  "kind": "scalar"},
+    "ActiveProcessLinks": {"offset": null, "size": 16, "kind": "ptr"},
+    "ImageFileName":      {"offset": null, "size": 15, "kind": "string_ansi"},
+    "Peb":                {"offset": null, "size": 8,  "kind": "ptr"}
+  },
+  "assertion": {
+    "dispatcher_header_type_at":    "0x00",
+    "dispatcher_header_type_value": "0x03"
+  }
+}

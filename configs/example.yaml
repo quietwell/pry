@@ -1,0 +1,179 @@
+# Pry orchestrator configuration (copy me, fill in token + targets)
+
+target:
+  # the single active target for a session (protocol supports N later)
+  host: 192.168.56.10
+  port: 50074
+  token: "change-me-long-random"     # must match agent --token
+  connect_timeout_ms: 10000
+
+targets:
+  # named secondary views (phase 1). "kernel" stays the primary above; this
+  # adds the driver-free usermode umagent view for parity cross-checks:
+  #   target_manage(action="connect", name="user")
+  #   target_manage(action="parity", pid=<pid>)
+  user:
+    host: 192.168.56.10
+    port: 50075
+    token: "change-me-long-random"   # must match umagent --token
+
+# machines:
+#   # named machines (multi-box). Each owns a '<machine>.kernel' +
+#   # '<machine>.user' view pair — connect a whole box at once, then
+#   # set this chat's focus:
+#   #   target_manage(action="connect", machine="lab2", views="both")
+#   #   target_manage(action="use", machine="lab2")
+#   lab2:
+#     host: 10.0.2.15
+#     token: "change-me-long-random"     # must match agent/umagent --token
+#     kernel_port: 50099
+#     user_port: 50075
+#     # Machine metadata (also settable/extendable at runtime via
+#     # machines_manage(action='register'/'set') — those
+#     # land in artifacts/targets.json and need no restart):
+#     purpose: "win11 22H2 test-signing rig"
+#     note: "NIC lease flaps between .15/.16"
+#     trust: "lab"        # untrusted | restricted | lab (see min_trust_actuator)
+#     operator: "hco3"
+#     tags: ["win11", "testsigning"]
+#   win7bare:
+#     host: 192.168.56.30
+#     token: "change-me-long-random"
+#     kernel_port: 50099
+#     user_port: 50075
+#     user: {host: 192.168.56.31, port: 50075}   # per-view override
+
+security:
+  # connect is refused unless the resolved target address is inside one of
+  # these CIDRs. Enforced before any packet leaves the orchestrator.
+  authorized_targets:
+    - "127.0.0.0/8"
+    - "192.168.56.0/24"
+  allow_delete: false          # file_manage delete (still trash-safe unless no_trash)
+  allow_driver_unload: true
+  allow_driver_load: true
+  allow_kill_connection: false    # net_manage kill (slice 02)
+  allow_live_kernel_dump: false   # dump_manage create_kernel_dump (slice 03 Feature 5)
+  allow_token_adjust: false       # token_manage mutators (slice 01)
+  max_transfer_mb: 512
+  max_mem_read_mb: 8
+  # machine-trust gate for actuator verbs (ioctl send,
+  # driver_load/unload, boot_recover, kill_process, exec call).
+  # Machines below this trust level need force=true per call.
+  # "untrusted" (default) = no gating; "lab" = lab-owned boxes only.
+  # min_trust_actuator: "lab"
+  # allow_function_call: true   # exec_manage call — remote function execution
+                                # (inject a trampoline+thread or run a kernel
+                                # function at PASSIVE_LEVEL; strongest actuator)
+  # memory_manage(allow_fault=true) soft-faults non-resident kernel pages in
+  # from the driver's IOCTL context — that wedged a lab VM twice. Refused
+  # (kind='not_allowed') and stripped from every read while false.
+  allow_kernel_softfault: false
+  # allow_hw_bp_hook: false     # DR-backed hw watchpoints (memory_manage
+                                # watch mode='hw', access_trace driver=watchhw)
+  # reconstruct_manage compile (and verify with code=) runs the host C
+  # toolchain (MSVC / clang-cl) on agent-supplied source. Off by default;
+  # call/verify against an existing build_id need no gate.
+  allow_host_compile: false
+  # Unknown / mistyped keys anywhere in this file are logged at startup and
+  # listed in target_manage(action='status') warnings — they are ignored,
+  # so a typo in a security knob keeps its (safe) default.
+
+mcp:
+  # 0.0.0.0 is fine (and needed for the agent phone-home beacon): only
+  # POST /api/agent_report is answered for non-loopback peers. /mcp, /api/*,
+  # /ws, the dashboard and /health answer loopback clients only, plus the
+  # networks listed in remote_cidrs.
+  bind: "127.0.0.1"
+  port: 8765
+  path: "/mcp"
+  # remote_cidrs: []            # e.g. ["192.168.2.195/32"] for a 2nd workstation
+  # Optional shared secret. When set, every request except the beacon needs
+  # 'Authorization: Bearer <token>' (MCP clients: add it to the server's
+  # headers); a browser opens http://127.0.0.1:8765/?token=<token> once.
+  # ${ENV_VAR} is expanded.
+  # auth_token: "${PRY_MCP_TOKEN}"
+  # allowed_hosts: []           # extra Host-header names (DNS-rebinding guard;
+                                # IP literals, localhost and this hostname
+                                # are always accepted)
+  # beacon_max_new_machines: 16 # cap on registry entries the unauthenticated
+                                # beacon may create
+
+dashboard:
+  enabled: true
+  bind: "127.0.0.1"
+  port: 8766
+
+artifacts:
+  dir: "artifacts"             # streamed binaries land in <dir>/<sha256>/
+  reports_dir: "reports"
+  pdb_cache: "artifacts/symbols"   # _NT_SYMBOL_PATH cache target
+  # Shared knowledge-base DB. A relative path is resolved against the
+  # repo root; pin an absolute path if you want the server to always
+  # land on the same DB regardless of launch cwd.
+  findings_db: "artifacts/findings.db"
+
+ida:
+  enabled: true
+  ida_path: "D:\\Apps\\IDA"   # local IDA install (idalib must be activated)
+  # headless ida-pro-mcp supervisor spawned on demand via uv
+  command: ["uv", "run", "idalib-mcp", "--stdio"]
+  prefer_gui: false            # true: prefer an existing GUI IDA session
+  open_timeout_s: 180          # idb_open + auto-analysis budget
+
+# Ghidra engine — sibling of ida:, OFF by default. ghidra_manage stays
+# registered but answers a typed "disabled" error until this flips on.
+# Needs: a Ghidra install, a JDK, and a Python env with pyghidra+mcp
+# (the backend runs in ONE shared JVM hosting all program sessions).
+ghidra:
+  enabled: false
+  ghidra_dir: ""               # e.g. "D:\\Apps\\ghidra_11.x_PUBLIC" -> GHIDRA_INSTALL_DIR
+  java_home: ""                # JDK home -> JAVA_HOME; empty = rely on PATH
+  project_dir: ""              # shared project dir; empty = <artifacts>/ghidra_project
+  project_name: "pry"
+  backend_python: ""           # interpreter with pyghidra+mcp; empty = auto-detect .ghidra-venv
+  heap_mb: 8192                # -Xmx for the shared JVM backend
+  open_timeout_s: 300          # JVM + import + auto-analysis is slower than idalib
+  open_soft_deadline_s: 10.0   # sync `open` falls back to pending/open_status after this
+  # command: ["uv", "run", "python", "orchestrator/ghidra_stdio_shim.py"]
+
+plugins:
+  dir: ""                        # empty: auto-resolve to <repo>\plugins (+ scripts_user overlay)
+
+symbols:
+  # PDB-backed kernel symbol resolution (pidddb_scan etc.)
+  allow_download: true           # fetch PDBs from the symbol server on first use
+  # servers: ["https://msdl.microsoft.com/download/symbols"]
+
+logging:
+  level: "INFO"
+  file: "pry.log"
+
+# reconstruct_manage (reconstruct-and-verify; docs/RECONSTRUCT.md). All keys
+# optional; compiles also need security.allow_host_compile: true.
+reconstruct:
+  default_toolchain: msvc        # msvc | clang-cl
+  vs_path: ""                    # VS / Build Tools root; empty = newest under Program Files
+  clang_cl: ""                   # clang-cl.exe override (default: VS Llvm component, Program Files or per-user LLVM, PATH)
+  lld_link: ""                   # lld-link.exe override (default: beside clang-cl, else link.exe)
+  compile_timeout_s: 60
+  link_timeout_s: 30
+  default_cases: 256             # verify: seeded random cases when cases= is omitted
+  max_insns: 5000000             # per-run instruction cap
+
+# --- Multi-agent lease / ownership layer (all keys optional) -----------------
+# These sections tune the caller-side client pool and the lease arbitrator
+# that coordinate multiple concurrent agents against the same target. Leave
+# them commented out to accept the built-in defaults.
+
+# clients:
+#   # Idle AgentClient reaper: how long a per-target client may sit unused
+#   # before its gRPC channel is torn down. Seconds.
+#   idle_reap_s: 300.0
+
+# leases:
+#   # Default wait when a peer attaches to a pid already attached under
+#   # someone else's lease. Zero fails fast. Seconds.
+#   attach_timeout_s: 5.0
+#   # Default wait for driver_load / driver_unload arbitration. Seconds.
+#   driver_timeout_s: 10.0

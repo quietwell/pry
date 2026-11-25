@@ -1,0 +1,16 @@
+{
+  "build": "19041",
+  "arch": "x64",
+  "type_name": "_EPROCESS",
+  "note": "Windows 10 20H1 (19041) / 20H2 (19042) / 21H1 (19043) / 21H2 (19044). This chunk ships the schema stub with null offsets — authoritative EPROCESS offsets for these builds were not reachable from the chunk's environment (no trusted pdbex/vergilius dump on hand). Operators populate with pdbex output before relying on the fast-path; the loader skips null-valued entries and falls back to the live PDB (and then the InvariantFieldFinder). Only the DISPATCHER_HEADER assertion is verified from first principles (KOBJECTS::ProcessObject == 0x03 on every x64 build since Vista).",
+  "eprocess": {
+    "UniqueProcessId":    {"offset": null, "size": 8,  "kind": "scalar"},
+    "ActiveProcessLinks": {"offset": null, "size": 16, "kind": "ptr"},
+    "ImageFileName":      {"offset": null, "size": 15, "kind": "string_ansi"},
+    "Peb":                {"offset": null, "size": 8,  "kind": "ptr"}
+  },
+  "assertion": {
+    "dispatcher_header_type_at":    "0x00",
+    "dispatcher_header_type_value": "0x03"
+  }
+}

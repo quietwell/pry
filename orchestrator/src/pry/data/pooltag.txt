@@ -1,0 +1,132 @@
+# pry — vendored pool-tag -> driver mapping
+#
+# Format mirrors Microsoft's WDK `pooltag.txt` artifact (one entry per line):
+#     TAG - OWNER - DESCRIPTION
+# where OWNER is `<driver>!<component>` or just `<driver>`. Lines starting
+# with `#`, blank lines, and the Microsoft-style `rem` prefix are ignored
+# so a WDK scrape can be dropped in verbatim.
+#
+# Scope: canonical kernel-mode allocation tags from public WDK /
+# Windows-Internals / debugger documentation. SI's `triage/pooltag.txt`
+# is NOT vendored — see `an internal plan
+# 04-umagent-orchestrator.md#feature-4` for the licensing note; this
+# file is seeded from public reference material (WDK symbol strings,
+# `!poolused` samples). Grow it via `scripts/build_pooltag_from_wdk.py`
+# as that scrape lands.
+#
+# -----------------------------------------------------------------------
+
+# --- Executive core (nt) ---
+Proc - nt!ps - Process objects
+Thre - nt!ps - Thread objects
+Even - nt!ex - Executive event objects (NtCreateEvent)
+Sema - nt!ex - Executive semaphore objects
+Muta - nt!ex - Mutant / mutex objects
+Time - nt!ex - Executive timer objects
+Toke - nt!se - Security token objects
+Job  - nt!ps - Job objects
+Sect - nt!mm - Section objects
+File - nt!io - File objects
+Dire - nt!ob - Object-manager directory objects
+Symb - nt!ob - Symbolic-link objects
+ObDi - nt!ob - Object-manager directory entries
+Hand - nt!ob - Handle-table expansion
+HanT - nt!ob - Handle-table arrays
+Obhd - nt!ob - Object header allocations
+Obha - nt!ob - Object-header + name info
+ObNm - nt!ob - Object namespace lookup buffers
+
+# --- Memory manager (nt!mm) ---
+MmCa - nt!mm - Mm cache / Mi* allocations
+MmSt - nt!mm - Mm section prototype PTEs
+MmSu - nt!mm - Mm subsections
+MmDm - nt!mm - Mm dump map
+MmPg - nt!mm - Pagefile tracking
+MmPf - nt!mm - Prefetcher
+Mmpg - nt!mm - Mm page frame numbers
+Pool - nt!ex - Pool allocator metadata
+Vad  - nt!mm - Virtual Address Descriptors
+VadS - nt!mm - Short VAD nodes
+VadF - nt!mm - VAD free-list bookkeeping
+VadL - nt!mm - Long VAD nodes
+Mdl  - nt!mm - MDL (Memory Descriptor List)
+MmRe - nt!mm - Mm resident available tracking
+
+# --- I/O manager / drivers (nt!io) ---
+Devi - nt!io - Device objects
+Driv - nt!io - Driver objects
+IoNm - nt!io - Device name buffers
+Irp  - nt!io - I/O request packets
+IRP  - nt!io - I/O request packets (alt)
+IoRs - nt!io - I/O resource lists
+IoSB - nt!io - I/O status block tracking
+MmCi - nt!mm - Code integrity image metadata
+Pnp0 - nt!pnp - Plug-and-Play bookkeeping
+PnpD - nt!pnp - PnP device nodes
+PnpB - nt!pnp - PnP BIOS allocations
+
+# --- Registry (nt!cm) ---
+CM    - nt!cm - Configuration manager (registry) general
+CMVa  - nt!cm - CM key value allocations
+CMVi  - nt!cm - CM view mappings
+CMNb  - nt!cm - CM name block
+CMKb  - nt!cm - CM key body
+CMCa  - nt!cm - CM key cache
+CMAl  - nt!cm - CM allocations
+CMHv  - nt!cm - CM hive allocations
+
+# --- Security / LSA / ALPC ---
+SeTa - nt!se - Security tag buffers
+SePr - nt!se - Security privilege sets
+SeAc - nt!se - Security ACL / ACE
+AlPc - nt!alpc - ALPC port + message buffers
+AlMs - nt!alpc - ALPC message blocks
+AlPo - nt!alpc - ALPC port objects
+
+# --- Network / TCP/IP (tcpip.sys, netio.sys, afd.sys) ---
+TcpT - tcpip!tcp - TCP TCB / TCP state
+TcpE - tcpip!tcp - TCP endpoint
+TcpL - tcpip!tcp - TCP listener
+TcpA - tcpip!tcp - TCP address object
+TcpR - tcpip!tcp - TCP receive buffers
+UdpA - tcpip!udp - UDP address object
+UdpS - tcpip!udp - UDP socket state
+IPnd - tcpip!ip - IP neighbor discovery
+Nblx - ndis - NDIS NET_BUFFER_LIST allocator
+NDpk - ndis - NDIS packet pool
+NDnb - ndis - NDIS NET_BUFFER
+AfdB - afd - AFD buffer
+AfdE - afd - AFD endpoint
+AfdC - afd - AFD connection
+
+# --- File systems ---
+NTFS - ntfs - NTFS allocations (general)
+NtfF - ntfs - NTFS FCB (File Control Block)
+NtfS - ntfs - NTFS SCB (Stream Control Block)
+NtfI - ntfs - NTFS index allocations
+NtfR - ntfs - NTFS record / MFT entry
+FAT  - fastfat - FAT filesystem allocations
+ReFS - refs - ReFS allocations (general)
+FMsl - fltmgr - Filter manager stream list
+FMic - fltmgr - Filter manager instance context
+FMfc - fltmgr - Filter manager filter context
+
+# --- Graphics / display / win32k ---
+Gh?? - win32k - Win32k GDI handle (type varies)
+Uskh - win32k - User-mode kernel handle cache
+Gla1 - dxgkrnl - DX graphics kernel allocation
+
+# --- Diagnostics / common wrappers ---
+Etw  - nt!etw - Event Tracing for Windows allocations
+EtwR - nt!etw - ETW rundown
+EtwB - nt!etw - ETW buffer
+Wmip - nt!wmi - WMI provider metadata
+PerR - nt!perf - Perflib data
+Wmio - nt!wmi - WMI object
+
+# --- Pry self-tags (reserved; useful when scanning our own pool) ---
+PryD - pry - Pry driver (generic allocation)
+PryE - pry - Pry notify-ring event records
+PryB - pry - Pry BpTrap per-CPU state
+PryI - pry - Pry BpTrap IDT copy pages
+PryY - pry - Pry dyn-data staging

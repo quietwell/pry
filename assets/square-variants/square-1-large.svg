@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="pry">
+  <title>pry</title>
+  <defs>
+    <linearGradient id="bg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="1024"><stop offset="0" stop-color="#161B22"/><stop offset="1" stop-color="#0B0E13"/></linearGradient>
+    <linearGradient id="bx" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1024" y2="0"><stop offset="0" stop-color="#FFC53D"/><stop offset="1" stop-color="#FF7A1A"/></linearGradient>
+    <linearGradient id="pg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="130" y2="200"><stop offset="0" stop-color="#FFC53D"/><stop offset="1" stop-color="#FF7A1A"/></linearGradient><mask id="pm" maskUnits="userSpaceOnUse" x="-15" y="-15" width="160" height="245">
+      <rect x="-15" y="-15" width="160" height="245" fill="#fff"/>
+      <polygon points="-1,201 31,201 -1,181.4" fill="#000"/>
+      <polygon points="54,109 54,121 67.6,115" fill="#000"/>
+    </mask>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <g transform="translate(122 250.26) scale(2.14)"><path d="M15,200 L15,65 A50,50 0 1 1 65,115 L55,115" fill="none" stroke="url(#pg)" stroke-width="30" stroke-linejoin="round" mask="url(#pm)"/>
+    <path d="M165,130 V57 A42,42 0 0 1 207,15 H223" fill="none" stroke="#F0F3F6" stroke-width="30"/>
+    <path d="M249,0 V65 A50,50 0 0 0 349,65" fill="none" stroke="#F0F3F6" stroke-width="30"/>
+    <polygon points="334,0 364,0 364,200 334,181.4" fill="#F0F3F6"/></g><rect x="122" y="762.83" width="32.73" height="10.91" rx="5.45" fill="url(#bx)" opacity="0.707"/><rect x="167.45" y="762.83" width="32.73" height="10.91" rx="5.45" fill="url(#bx)" opacity="0.718"/><rect x="212.91" y="762.83" width="32.73" height="10.91" rx="5.45" fill="url(#bx)" opacity="0.765"/><rect x="258.36" y="762.83" width="32.73" height="10.91" rx="5.45" fill="url(#bx)" opacity="0.754"/><rect x="325.64" y="762.83" width="32.73" height="10.91" rx="5.45" fill="url(#bx)" opacity="0.91"/><rect x="371.09" y="762.83" width="32.73" height="10.91" rx="5.45" fill="url(#bx)" opacity="0.723"/><rect x="416.55" y="762.83" width="32.73" height="10.91" rx="5.45" fill="url(#bx)" opacity="0.448"/><rect x="462" y="762.83" width="32.73" height="10.91" rx="5.45" fill="url(#bx)" opacity="0.718"/><rect x="529.27" y="762.83" width="32.73" height="10.91" rx="5.45" fill="url(#bx)" opacity="0.765"/><rect x="574.73" y="762.83" width="32.73" height="10.91" rx="5.45" fill="url(#bx)" opacity="0.67"/><rect x="620.18" y="762.83" width="32.73" height="10.91" rx="5.45" fill="url(#bx)" opacity="0.688"/><rect x="665.64" y="762.83" width="32.73" height="10.91" rx="5.45" fill="url(#bx)" opacity="0.906"/><rect x="732.91" y="762.83" width="32.73" height="10.91" rx="5.45" fill="url(#bx)" opacity="0.652"/><rect x="778.36" y="762.83" width="32.73" height="10.91" rx="5.45" fill="url(#bx)" opacity="0.802"/><rect x="823.82" y="762.83" width="32.73" height="10.91" rx="5.45" fill="url(#bx)" opacity="0.809"/><rect x="869.27" y="762.83" width="32.73" height="10.91" rx="5.45" fill="url(#bx)" opacity="0.496"/>
+</svg>

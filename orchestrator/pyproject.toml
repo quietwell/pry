@@ -1,0 +1,192 @@
+[project]
+name = "pry"
+version = "0.0.0"
+description = "AI-driven security assessment orchestrator: MCP server, agent link, IDA bridge, shared cross-agent knowledge base"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
+    "fastmcp==4.0.1",
+    "grpcio>=1.66",
+    "grpcio-tools>=1.66",
+    "protobuf>=5.27",
+    "aiosqlite>=0.20",
+    "pyyaml>=6.0",
+    "websockets>=13.0",
+    "pillow>=10",
+    # Memory scanner wave 3 P4 (AccessTrace): Capstone powers the memop
+    # decoder used by both driver paths to extract the effective address
+    # of a BP_HIT's data access from the instruction at RIP. Promoted
+    # from the [codegen] optional extra so AccessTrace works out of the
+    # box.
+    "capstone>=5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.27",
+    "ruff>=0.8",
+    "mypy>=1.13",
+]
+yara = [
+    "yara-python>=4.3",
+]
+codegen = [
+    # capstone moved to the main dependencies list for Memory scanner wave 3
+    # P4 (AccessTrace); kept here would double-declare the pin, so the
+    # [codegen] extra now only ships the write-side primitives.
+    "keystone-engine>=0.9.2",
+    "unicorn>=2.0",
+    "speakeasy-emulator>=1.5.9",
+]
+ghidra = [
+    # Backend env for ghidra_manage — pyghidra drives the headless JVM;
+    # needs GHIDRA_INSTALL_DIR + a JDK at runtime. The ghidra/idalib
+    # shims use the mcp 1.x lowlevel Server list_tools/call_tool
+    # decorators, which mcp 2.x (required by fastmcp 4.0.1) removed, so
+    # the shims MUST run under a dedicated interpreter: auto-detected
+    # `.ghidra-venv` / `.ida-mcp-venv` (see ghidra_shim/backend.py and
+    # ghidra_bridge/lifecycle.py), each created with `mcp>=1.0,<2` +
+    # pyghidra/idalib. Do NOT add mcp pins to this extra — they conflict
+    # with fastmcp 4.0.1 at lock time.
+    "pyghidra>=2.0.0",
+]
+
+[project.scripts]
+pry-server = "pry.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pry"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# Deliberately narrow: E4/E7/E9 (real syntax + undefined-name classes),
+# F (pyflakes), I (import sorting). Style opinions stay out.
+select = ["E4", "E7", "E9", "F", "I"]
+# legacy: baseline noise documented per rule — the gate exists to catch NEW
+# undefined names/syntax errors, not to reformat the existing codebase.
+ignore = [
+    # legacy: compact multi-statement style throughout findings/, tools/, emulate/
+    "E701",
+    "E702",
+    # legacy: import order predates the gate; a mass sort would churn 141 files
+    "I001",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# legacy: tests import pytest/stdlib by convention, shadow fixtures, use `l`
+"tests/**" = ["E402", "E741", "F401", "F811", "F841"]
+# legacy: tools/ is built on `from .common import *` — F405 is architectural
+# there (F821 still fires for names no starred module provides)
+"src/pry/mcp/tools/**" = ["E401", "E402", "F401", "F405", "F541", "F841"]
+# legacy: generated protobuf stubs — never hand-edited
+"src/pry/generated/**" = ["F401"]
+# legacy: deliberate re-export facades (names re-exported without __all__)
+"src/pry/mcp/_envelope/__init__.py" = ["F401"]
+"src/pry/mcp/conversions/__init__.py" = ["F401"]
+# legacy: unused imports kept — possible side-effect/re-export semantics
+"src/pry/agent_client/client.py" = ["F401"]
+"src/pry/agent_client/device.py" = ["F401"]
+"src/pry/analysis/driver.py" = ["F401"]
+"src/pry/analysis/hardening.py" = ["F401"]
+"src/pry/analysis/pe.py" = ["F401"]
+"src/pry/session.py" = ["F401"]
+# legacy: pre-existing dead locals, not worth pre-gate churn
+"src/pry/analysis/engine.py" = ["F841"]
+"src/pry/dashboard/api.py" = ["F841"]
+"src/pry/emulate/unicorn_engine.py" = ["F841"]
+"src/pry/mcp/_envelope/paging.py" = ["F841"]
+"src/pry/mcp/conversions/floats.py" = ["F841"]
+"src/pry/snapshot.py" = ["F841"]
+"src/pry/yara.py" = ["F841"]
+# legacy: duplicated dict keys in shipped data tables (hex vs decimal twins);
+# later entry wins today — removing either changes which value survives
+"src/pry/mcp/conversions/bits.py" = ["F601"]
+"src/pry/mcp/error_maps.py" = ["F601"]
+# legacy: per-closure `_time` snapshots intentionally shadow the module import
+"src/pry/mcp/tools/follow.py" = ["F811"]
+# legacy: server.py is version-skew-sensitive; its unused Path import is left
+# in place rather than churned by the lint baseline
+"src/pry/server.py" = ["F401"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src/pry"]
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_configs = true
+# NOT strict by design: the codebase predates type coverage; the gate
+# exists to catch NEW type errors in checked modules, not to demand
+# annotations retroactively.
+
+# legacy: baseline error mass in structural modules, documented per package —
+# generated stubs (510), grpc client wrappers, the shim bridges, and the
+# star-import tool modules. Everything else stays checked; new type errors
+# in checked modules fail the gate.
+[[tool.mypy.overrides]]
+module = ["pry.generated.*"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["pry.agent_client.*"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["pry.ida_bridge.*"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["pry.ghidra_bridge.*"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["pry.mcp.tools.*"]
+ignore_errors = true
+
+# legacy: second-tier legacy modules — pre-existing type debt documented here
+# rather than churned; new modules stay fully checked by default.
+[[tool.mypy.overrides]]
+module = [
+    "pry.analysis.*",
+    "pry.audit",
+    "pry.config",
+    "pry.emulate.*",
+    "pry.findings.*",
+    "pry.leases",
+    "pry.minidump",
+    "pry.plugins",
+    "pry.sdk.apis.*",
+    "pry.session",
+    "pry.scripts.*",
+    "pry.yara",
+    "pry.mcp._coverage",
+    "pry.mcp._decode_enums",
+    "pry.mcp._hex_addresses",
+    "pry.mcp.conversions.*",
+    "pry.mcp.value_eval",
+]
+ignore_errors = true
+
+# legacy: `sys.exit(main())` with a None-returning main — kept verbatim
+[[tool.mypy.overrides]]
+module = "pry.server"
+disable_error_code = ["func-returns-value"]
+
+# legacy: union-narrowing debt in the two sdk I/O modules; the rest of the
+# sdk package (sdk.py, reader.py, pe.py) stays checked
+[[tool.mypy.overrides]]
+module = ["pry.sdk.view", "pry.sdk.scan"]
+ignore_errors = true
