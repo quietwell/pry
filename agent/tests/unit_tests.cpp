@@ -8,7 +8,8 @@
 //   * the shared pattern-scan loop (comm/pattern_scan.hpp) edge cases;
 //   * comm ABI struct layout asserts and the array-reply validator;
 //   * scan/map id validation + scan-root containment;
-//   * the CommandLineToArgvW-compatible argument quoting.
+//   * the CommandLineToArgvW-compatible argument quoting;
+//   * byte-count -> WCHAR-count math for WTS-style wide buffers.
 //
 // Exit code 0 = all passed. Each failed CHECK prints file:line.
 
@@ -20,6 +21,7 @@
 #include "pry_comm.h"
 #include "src/exec/cmdline_quote.hpp"
 #include "src/grpc/abi_gate.hpp"
+#include "src/host/wide_len.hpp"
 #include "src/scan/scan_ids.hpp"
 
 #include <algorithm>
@@ -464,6 +466,34 @@ void TestAbiGateList()
     CHECK(!IsDriverBackedMethod(""));
 }
 
+// ------------------------------------------- byte-length wide buffers ----
+
+void TestWideCharsInByteBuffer()
+{
+    using pry::host::WideCharsInByteBuffer;
+
+    // The live regression: an 8-character WTSUserName reports 18 bytes
+    // (8 WCHARs + NUL). Slack after the NUL must never be counted.
+    wchar_t user[32];
+    for (auto& c : user) c = L'X';
+    std::memcpy(user, L"labuser1", 9 * sizeof(wchar_t));
+    CHECK(WideCharsInByteBuffer(user, 9 * sizeof(wchar_t)) == 8);
+    // A byte count larger than the string still stops at the NUL.
+    CHECK(WideCharsInByteBuffer(user, sizeof(user)) == 8);
+
+    // No NUL inside the reported size: stop at the size, never read past it.
+    const wchar_t abc[] = L"abcdef";
+    CHECK(WideCharsInByteBuffer(abc, 3 * sizeof(wchar_t)) == 3);
+    // An odd trailing byte is not a whole WCHAR.
+    CHECK(WideCharsInByteBuffer(abc, 3 * sizeof(wchar_t) + 1) == 3);
+    CHECK(WideCharsInByteBuffer(abc, 1) == 0);
+
+    // Empty / degenerate inputs.
+    CHECK(WideCharsInByteBuffer(L"", sizeof(wchar_t)) == 0);
+    CHECK(WideCharsInByteBuffer(abc, 0) == 0);
+    CHECK(WideCharsInByteBuffer(nullptr, 16) == 0);
+}
+
 } // namespace
 
 int main()
@@ -477,6 +507,7 @@ int main()
     TestScanIds();
     TestQuoteArgRoundTrip();
     TestAbiGateList();
+    TestWideCharsInByteBuffer();
     std::printf("pry_unit_tests: %d checks, %d failures\n", g_checks, g_failures);
     return g_failures ? 1 : 0;
 }

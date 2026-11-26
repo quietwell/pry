@@ -14,6 +14,7 @@
 //     by a userland shim.
 
 #include "host_info.hpp"
+#include "wide_len.hpp"
 
 #include "pry_abi.h"
 
@@ -210,11 +211,13 @@ void ProbeConsoleUser(HostInfo& out)
         return;
     }
     LPWSTR buf = nullptr;
-    DWORD len = 0;
-    if (WTSQuerySessionInformationW(WTS_CURRENT_SERVER_HANDLE, sid, WTSUserName, &buf, &len) &&
+    DWORD len_bytes = 0;  // WTS reports BYTES (incl. the NUL), not WCHARs
+    if (WTSQuerySessionInformationW(WTS_CURRENT_SERVER_HANDLE, sid, WTSUserName, &buf,
+                                    &len_bytes) &&
         buf != nullptr) {
-        if (buf[0] != 0) {
-            out.logged_on_user = WideToUtf8(buf, (int)(len > 0 ? len - 1 : 0));
+        size_t chars = WideCharsInByteBuffer(buf, len_bytes);
+        if (chars > 0) {
+            out.logged_on_user = WideToUtf8(buf, (int)chars);
         }
         WTSFreeMemory(buf);
     } else {
