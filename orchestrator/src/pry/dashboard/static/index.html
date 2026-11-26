@@ -3,102 +3,155 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pry</title>
+  <meta name="color-scheme" content="dark" />
+  <title>pry · dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-  <header>
-    <div class="brand">
-      <h1>Pry</h1>
-    </div>
-    <div class="hdr-meta">
-      <span id="focus-pill" class="pill" title="focus machine" hidden></span>
-      <span id="ver-pill" class="pill" title="server version"></span>
-      <span id="tools-pill" class="pill" title="registered tools"></span>
-      <span id="conn" class="badge">…</span>
+  <header class="topbar">
+    <a class="brand" href="/" title="pry dashboard">
+      <svg class="mark" viewBox="100 44 312 452" role="img" aria-label="pry">
+        <defs>
+          <linearGradient id="pryAmber" gradientUnits="userSpaceOnUse" x1="120" y1="70" x2="400" y2="440">
+            <stop offset="0" stop-color="#FFC53D" /><stop offset="1" stop-color="#FF7A1A" />
+          </linearGradient>
+          <mask id="pryCut" maskUnits="userSpaceOnUse" x="102" y="46" width="308" height="448">
+            <rect x="102" y="46" width="308" height="448" fill="#fff" />
+            <polygon points="130,437 190,437 130,400.04" fill="#000" />
+            <polygon points="235.8,284.4 235.8,307.6 261.16,296" fill="#000" />
+          </mask>
+        </defs>
+        <path d="M160,436 L160,200 A96,96 0 1 1 256,296 L236.8,296" fill="none" stroke="url(#pryAmber)"
+              stroke-width="58" stroke-linejoin="round" mask="url(#pryCut)" />
+      </svg>
+    </a>
+    <div class="top-meta">
+      <label class="machine-pick" title="Machine shown in the detail panel">
+        <span>machine</span>
+        <select id="machine-select" aria-label="Machine shown in the detail panel"></select>
+      </label>
+      <span id="live" class="live off" title="Live link to the orchestrator">
+        <span class="live-dot"></span><span id="live-text">connecting…</span>
+      </span>
+      <span id="calls-pill" class="pill mono" title="Tool calls this session"></span>
+      <span id="ver-pill" class="pill mono" title="Orchestrator version"></span>
     </div>
   </header>
 
-  <main>
-    <!-- Machines ------------------------------------------------------ -->
-    <section class="panel span-2" id="machines">
+  <main class="layout">
+    <!-- Machines rail --------------------------------------------------- -->
+    <aside class="panel rail" aria-label="Machines">
       <div class="panel-hd">
-        <h2>Machines</h2>
-        <div class="hd-actions">
-          <button id="btn-machines-cleanup" class="btn" title="Preview and remove empty shell entries">Cleanup empty shells</button>
-          <button id="add-btn" class="btn btn-accent">+ Add machine</button>
+        <h2>Machines <span id="m-count" class="count"></span></h2>
+        <button id="add-btn" class="btn btn-primary btn-sm" title="Register a new machine">+ Add</button>
+      </div>
+      <input id="m-filter" class="input" type="search" placeholder="Filter machines…" autocomplete="off" />
+      <ul id="m-list" class="m-list" role="listbox" aria-label="Machines"></ul>
+      <div id="m-shells" class="m-shells" hidden></div>
+    </aside>
+
+    <!-- Selected machine ----------------------------------------------- -->
+    <section class="panel detail" id="detail" aria-live="polite">
+      <div id="d-head" class="d-head"></div>
+      <div id="d-meta" class="d-meta"></div>
+      <div id="d-views" class="d-views"></div>
+      <div class="d-grid">
+        <div class="sub">
+          <div class="sub-hd"><h3>Host &amp; driver</h3><span id="host-note" class="hint"></span></div>
+          <dl id="host-dl" class="kv"></dl>
+        </div>
+        <div class="sub">
+          <div class="sub-hd"><h3>Protections</h3><span id="posture-note" class="hint"></span></div>
+          <div id="posture-grid" class="chip-grid"></div>
         </div>
       </div>
-      <form id="add-form" class="add-form" hidden>
-        <div class="grid-fields">
-          <label>Alias<input name="alias" placeholder="lab3" required /></label>
-          <label>Host<input name="host" placeholder="10.0.2.20" /></label>
-          <label>Kernel port<input name="kernel_port" type="number" placeholder="50074" /></label>
-          <label>User port<input name="user_port" type="number" placeholder="50075" /></label>
-          <label>Token<input name="token" placeholder="${LAB3_TOKEN}" /></label>
-          <label>Trust
-            <select name="trust">
-              <option value="untrusted">untrusted</option>
-              <option value="restricted">restricted</option>
-              <option value="lab">lab</option>
-            </select>
-          </label>
-          <label>Purpose<input name="purpose" placeholder="delta rig" /></label>
-          <label>Tags<input name="tags" placeholder="win11, vm" /></label>
-          <label class="wide">Note<input name="note" placeholder="testsigning on" /></label>
-          <label class="wide chk">
-            <input type="checkbox" name="force" />
-            Override reviewed YAML endpoints (force)
-          </label>
+    </section>
+
+    <!-- Activity -------------------------------------------------------- -->
+    <section class="panel activity" aria-label="Activity">
+      <div class="act-hd">
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" data-tab="calls">Tool calls <span id="tab-calls" class="count"></span></button>
+          <button class="tab" role="tab" data-tab="events">Events <span id="tab-events" class="count"></span></button>
+          <button class="tab" role="tab" data-tab="findings">Findings <span id="tab-findings" class="count"></span></button>
         </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-accent">Save</button>
-          <button type="button" id="add-cancel" class="btn">Cancel</button>
-          <span id="add-err" class="form-err"></span>
+        <div class="act-tools">
+          <input id="act-filter" class="input input-sm" type="search" placeholder="Filter…  ( / )" autocomplete="off" />
+          <span class="only-calls">
+            <label class="toggle"><input type="checkbox" id="f-errors" /> errors</label>
+            <label class="toggle"><input type="checkbox" id="f-destr" /> destructive</label>
+            <label class="toggle" title="Only calls that name the selected machine"><input type="checkbox" id="f-mine" /> this machine</label>
+          </span>
+          <span class="only-findings" id="sev-filter"></span>
         </div>
-      </form>
-      <div id="machine-cards" class="cards">loading…</div>
-    </section>
-
-    <!-- Security posture --------------------------------------------- -->
-    <section class="panel" id="posture">
-      <div class="panel-hd"><h2>Security posture</h2><span id="posture-note" class="hint"></span></div>
-      <div id="posture-grid" class="chip-grid">–</div>
-    </section>
-
-    <!-- Driver & host ------------------------------------------------ -->
-    <section class="panel" id="host">
-      <div class="panel-hd"><h2>Driver &amp; host</h2></div>
-      <dl id="host-dl" class="kv">–</dl>
-    </section>
-
-    <!-- Findings ----------------------------------------------------- -->
-    <section class="panel" id="findings">
-      <div class="panel-hd">
-        <h2>Findings</h2>
-        <div id="sev-counts" class="sev-counts"></div>
       </div>
-      <div id="findings-list" class="findings-list">–</div>
-    </section>
-
-    <!-- Live events -------------------------------------------------- -->
-    <section class="panel" id="events">
-      <div class="panel-hd"><h2>Live events</h2></div>
-      <div id="event-list" class="feed"></div>
-    </section>
-
-    <!-- Tool-call log ------------------------------------------------ -->
-    <section class="panel span-2" id="toollog">
-      <div class="panel-hd">
-        <h2>Tool-call log</h2>
-        <label class="toggle"><input type="checkbox" id="only-destr" /> destructive only</label>
+      <div class="act-body">
+        <div class="pane" data-pane="calls">
+          <table class="log">
+            <thead><tr><th class="c-time">time</th><th>tool</th><th>action</th><th>target</th><th>result</th></tr></thead>
+            <tbody id="log-body"></tbody>
+          </table>
+        </div>
+        <div class="pane" data-pane="events" hidden>
+          <div class="pane-note">Debug events from the primary view.</div>
+          <div id="event-list" class="feed"></div>
+        </div>
+        <div class="pane" data-pane="findings" hidden>
+          <div id="findings-list" class="findings"></div>
+        </div>
       </div>
-      <table>
-        <thead><tr><th>time</th><th>tool</th><th>action</th><th>flags</th><th>result</th></tr></thead>
-        <tbody id="toollog-body"></tbody>
-      </table>
     </section>
   </main>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div id="menu" class="menu" role="menu" hidden></div>
+
+  <!-- Add / edit machine --------------------------------------------- -->
+  <dialog id="machine-dlg" class="dlg">
+    <form id="machine-form" method="dialog" novalidate>
+      <div class="dlg-hd"><h2 id="machine-dlg-title">Add machine</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Close">×</button></div>
+      <div class="grid-fields">
+        <label>Alias<input name="alias" placeholder="lab3" required /></label>
+        <label>Host<input name="host" placeholder="10.0.2.20" /></label>
+        <label>Kernel port<input name="kernel_port" type="number" min="1" max="65535" placeholder="50074" /></label>
+        <label>User port<input name="user_port" type="number" min="1" max="65535" placeholder="50075" /></label>
+        <label>Token<input name="token" placeholder="${LAB3_TOKEN}" autocomplete="off" /></label>
+        <label>Trust
+          <select name="trust">
+            <option value="untrusted">untrusted</option>
+            <option value="restricted">restricted</option>
+            <option value="lab">lab</option>
+          </select>
+        </label>
+        <label>Purpose<input name="purpose" placeholder="delta rig" /></label>
+        <label>Tags<input name="tags" placeholder="win11, vm" /></label>
+        <label class="wide">Note<input name="note" placeholder="testsigning on" /></label>
+        <label class="wide chk">
+          <input type="checkbox" name="force" />
+          Override reviewed YAML endpoints (force)
+        </label>
+      </div>
+      <div class="dlg-err" id="machine-err" role="alert"></div>
+      <div class="dlg-actions">
+        <button type="button" class="btn" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary" id="machine-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Confirm --------------------------------------------------------- -->
+  <dialog id="confirm-dlg" class="dlg dlg-sm">
+    <form method="dialog">
+      <div class="dlg-hd"><h2 id="confirm-title">Confirm</h2></div>
+      <div id="confirm-body" class="confirm-body"></div>
+      <div class="dlg-actions">
+        <button value="cancel" class="btn">Cancel</button>
+        <button value="ok" class="btn btn-danger-solid" id="confirm-ok">OK</button>
+      </div>
+    </form>
+  </dialog>
 
   <script src="/app.js"></script>
 </body>

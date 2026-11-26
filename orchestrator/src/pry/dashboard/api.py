@@ -95,6 +95,63 @@ def _probe_connected_views(session) -> list[dict]:
     return rows
 
 
+#: Seconds the dashboard reuses a view's HostInfo + pry-driver probe. Those
+#: two fan out into ~8 agent RPCs (registry + file stats); the page polls
+#: status every few seconds, so without a cache the dashboard alone kept
+#: the lab agent busy. ``/api/status?refresh=1`` bypasses it.
+_RICH_TTL_S = 30.0
+
+#: Tool-log arg keys whose values never leave the orchestrator.
+_SECRET_KEY_RE = re.compile(r"token|passw|secret|credential|auth|cookie",
+                            re.IGNORECASE)
+_ARG_STR_CAP = 200
+_ARG_LIST_CAP = 20
+_ARG_KEYS_CAP = 40
+_ARG_DEPTH_CAP = 4
+#: Internal bookkeeping keys the dashboard audit threads into args.
+_ARG_HIDDEN = frozenset({"_peer", "_current_owner"})
+
+
+def _clean_args(value: Any, depth: int = 0) -> Any:
+    """JSON-safe, size-capped, secret-free copy of a tool call's args for
+    the dashboard's expandable tool-log rows. Secret-looking keys keep
+    booleans (``token_set``) and lose everything else."""
+    if depth > _ARG_DEPTH_CAP:
+        return "…"
+    if isinstance(value, dict):
+        out: dict[str, Any] = {}
+        for k, v in list(value.items())[:_ARG_KEYS_CAP]:
+            key = str(k)
+            if key in _ARG_HIDDEN:
+                continue
+            if _SECRET_KEY_RE.search(key) and not isinstance(v, bool):
+                out[key] = "<redacted>"
+                continue
+            out[key] = _clean_args(v, depth + 1)
+        return out
+    if isinstance(value, (list, tuple, set)):
+        seq = list(value)
+        items = [_clean_args(v, depth + 1) for v in seq[:_ARG_LIST_CAP]]
+        if len(seq) > _ARG_LIST_CAP:
+            items.append(f"… +{len(seq) - _ARG_LIST_CAP} more")
+        return items
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    if isinstance(value, (bytes, bytearray)):
+        return f"<{len(value)} bytes>"
+    s = str(value)
+    return s if len(s) <= _ARG_STR_CAP else s[:_ARG_STR_CAP] + "…"
+
+
+def _call_target(args: dict[str, Any] | None) -> str:
+    """The machine / view a tool call addressed, when its args name one."""
+    for key in ("name", "machine", "alias"):
+        v = (args or {}).get(key)
+        if isinstance(v, str) and v.strip():
+            return v.strip()[:80]
+    return ""
+
+
 #: Beacon label / computer_name shape (NetBIOS names and operator aliases).
 _BEACON_LABEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 #: A beacon reporting more addresses than this is truncated.
@@ -199,18 +256,78 @@ def register_dashboard_routes(app, ctx) -> None:  # noqa: ANN001 - FastAPI app
             "tool_count": len(tools),
         })
 
-    @app.get("/api/status")
-    async def status() -> JSONResponse:
+    # view -> (monotonic ts, client object, driver_state, host_info, probe).
+    # Keyed on the client object + driver_state too, so a reconnect or a
+    # driver load/unload invalidates the entry instead of serving 30s of
+    # stale posture.
+    rich_cache: dict[str, tuple[float, Any, str, dict, dict]] = {}
+
+    def _status_view(machine: str) -> str | None:
+        """Which connected view /api/status describes: the requested
+        machine's default view (kernel, else its first live view), else
+        the dashboard focus, else the session primary. ``None`` when the
+        caller named a machine that has no live view."""
         sess = ctx.session
+        if not sess.clients:
+            return None
+        asked = (machine or "").strip()
+        sel = asked
+        if not sel:
+            focus = sess.focus_of(_DASH_OWNER) or {}
+            sel = str(focus.get("machine") or "")
+        if sel:
+            try:
+                view = sess.resolve_view_name(sel, client_id=_DASH_OWNER)
+            except Exception:  # noqa: BLE001 — unknown machine
+                view = ""
+            if view in sess.clients:
+                return view
+            if asked:
+                return None
+        primary = getattr(sess, "primary", None)
+        if primary in sess.clients:
+            return primary
+        return next(iter(sess.clients))
+
+    async def _rich(view: str, client, driver_state: str,
+                    refresh: bool) -> tuple[dict, dict, float]:
+        """HostInfo + pry-driver probe for *view*, cached ``_RICH_TTL_S``."""
+        now = time.monotonic()
+        hit = rich_cache.get(view)
+        if (hit is not None and not refresh and hit[1] is client
+                and hit[2] == driver_state and now - hit[0] < _RICH_TTL_S):
+            return hit[3], hit[4], now - hit[0]
+        try:
+            hi = await client.host_info(include_hardware=False)
+        except Exception as exc:  # noqa: BLE001
+            hi = {"ok": False, "error": str(exc)}
+        try:
+            from ..mcp._pry_driver_probe import probe_pry_driver
+            probe = await probe_pry_driver(client, driver_state=driver_state)
+        except Exception as exc:  # noqa: BLE001
+            probe = {"ok": False, "error": f"probe failed: {exc}"}
+        rich_cache[view] = (time.monotonic(), client, driver_state, hi, probe)
+        return hi, probe, 0.0
+
+    @app.get("/api/status")
+    async def status(machine: str = "", refresh: bool = False) -> JSONResponse:
+        sess = ctx.session
+        view = _status_view(machine)
         out = {
             "connected": sess.connected,
+            "views_connected": len(sess.clients),
             "target": sess.cfg.target_endpoint,
             "active_ida_sessions": ctx.bridge.sessions,
             "tool_calls": len(sess.tool_log),
+            "view": view,
+            "machine": sess.machine_of(view) if view else (machine or None),
         }
-        if sess.client is not None and sess.connected:
+        client = sess.clients.get(view) if view else None
+        for stale in [v for v in rich_cache if v not in sess.clients]:
+            rich_cache.pop(stale, None)
+        if client is not None:
             try:
-                agent = await sess.client.status()
+                agent = await client.status()
             except Exception as exc:
                 out["agent_error"] = str(exc)
                 return JSONResponse(out)
@@ -221,10 +338,9 @@ def register_dashboard_routes(app, ctx) -> None:  # noqa: ANN001 - FastAPI app
             driver_present = str(agent.get("driver_state", "")).upper() in (
                 "DRIVER_SERVICE", "DRIVER_MANUAL_MAPPED", "SERVICE", "MANUAL_MAPPED")
             agent["driver_present"] = driver_present
-            try:
-                hi = await sess.client.host_info(include_hardware=False)
-            except Exception as exc:
-                hi = {"ok": False, "error": str(exc)}
+            hi, probe, age = await _rich(
+                view, client, str(agent.get("driver_state") or ""), refresh)
+            out["rich_age_s"] = round(age, 1)
             if hi.get("ok"):
                 sec = hi.get("security") or {}
                 uptime = hi.get("uptime") or {}
@@ -246,17 +362,12 @@ def register_dashboard_routes(app, ctx) -> None:  # noqa: ANN001 - FastAPI app
                 agent["service_uptime_ms"] = uptime.get("service_uptime_ms")
                 agent["boot_time"] = (hi.get("os") or {}).get("boot_time")
                 agent["os"] = hi.get("os") or agent.get("os")
+                agent["identity"] = hi.get("identity") or {}
             else:
                 agent["host_info_hint"] = ("HostInfo RPC unavailable "
                                             "(agent < v8?) — rich fields skipped")
             # Pry-driver health explains DRIVER_ABSENT.
-            try:
-                from ..mcp._pry_driver_probe import probe_pry_driver
-                agent["pry_driver_health"] = await probe_pry_driver(
-                    sess.client, driver_state=agent.get("driver_state"))
-            except Exception as exc:
-                agent["pry_driver_health"] = {"ok": False,
-                                                  "error": f"probe failed: {exc}"}
+            agent["pry_driver_health"] = probe
             out["agent"] = agent
         return JSONResponse(out)
 
@@ -265,7 +376,8 @@ def register_dashboard_routes(app, ctx) -> None:  # noqa: ANN001 - FastAPI app
         return JSONResponse([f.__dict__ for f in ctx.ledger.list_findings()])
 
     @app.get("/api/toollog")
-    async def toollog() -> JSONResponse:
+    async def toollog(limit: int = 200) -> JSONResponse:
+        n = max(1, min(int(limit or 200), 500))
         return JSONResponse([
             {
                 "tool": c.tool,
@@ -274,8 +386,10 @@ def register_dashboard_routes(app, ctx) -> None:  # noqa: ANN001 - FastAPI app
                 "ok": c.ok,
                 "error": c.error,
                 "ts": c.ts,
+                "target": _call_target(c.args),
+                "args": _clean_args(c.args or {}),
             }
-            for c in ctx.session.tool_log[-100:]
+            for c in ctx.session.tool_log[-n:]
         ])
 
     # -------------------------------------------------------- machines ----
@@ -288,6 +402,18 @@ def register_dashboard_routes(app, ctx) -> None:  # noqa: ANN001 - FastAPI app
         rows: list[dict] = []
         seen: set[str] = set()
         live = ctx.session.machines()
+        # Per-view live state (dialled endpoint, last answer age) so a
+        # card shows the address actually in use, not just the registry's.
+        probes: dict[str, list[dict]] = {}
+        for p in _probe_connected_views(ctx.session):
+            probes.setdefault(p["machine"], []).append(p)
+        # The same verdict "Clean up empty shells" would act on (dry run:
+        # read-only), so the UI can fold shells away without guessing.
+        try:
+            shells = {a.lower() for a in reg.prune_empty_shells(
+                session_machines=live, dry_run=True).get("removed", [])}
+        except Exception:  # noqa: BLE001 — cosmetic only
+            shells = set()
 
         def _row(alias: str) -> dict:
             r = reg.describe(alias, cfg=ctx.cfg) or {"machine": alias}
@@ -296,6 +422,8 @@ def register_dashboard_routes(app, ctx) -> None:  # noqa: ANN001 - FastAPI app
             r["connected_views"] = sorted(
                 ctx.session.view_kind_of(v) for v in views)
             r["connected"] = bool(views)
+            r["live"] = probes.get(label, [])
+            r["shell"] = alias.lower() in shells or label.lower() in shells
             return r
 
         for a in list(reg.all().keys()) + list(
@@ -747,3 +875,8 @@ def register_dashboard_routes(app, ctx) -> None:  # noqa: ANN001 - FastAPI app
     async def style_css() -> FileResponse:
         return FileResponse(STATIC_DIR / "style.css", media_type="text/css",
                             headers=_NO_CACHE)
+
+    @app.get("/favicon.svg")
+    async def favicon() -> FileResponse:
+        return FileResponse(STATIC_DIR / "mark.svg",
+                            media_type="image/svg+xml", headers=_NO_CACHE)
