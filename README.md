@@ -20,6 +20,7 @@
 - [Installation](#installation)
 - [Connecting a client](#connecting-a-client)
 - [Usage](#usage)
+- [Dashboard](#dashboard)
 - [Tools](#tools)
 - [Configuration](#configuration)
 - [Security model](#security-model)
@@ -135,7 +136,13 @@ Connect a target (`target_manage(action='connect', machine='lab2')`), then ask i
 
 Every tool describes itself: `<tool>(action='actions')` lists its verbs and shows a worked example, and `target_manage(action='tool_index')` dumps the whole surface.
 
-With `dashboard.enabled: true` the orchestrator also serves a live web UI on `http://127.0.0.1:8766` — session and agent status, the findings ledger, the tool-call log and the machine registry (connect, disconnect, use), updated over a websocket.
+## Dashboard
+
+The orchestrator also serves a live web UI on `http://127.0.0.1:8766` (`dashboard.enabled`, on by default). Pick a machine to see its views, host and driver state and Windows protections; connect, disconnect, add, edit and remove machines; and follow tool calls, events and findings as they happen.
+
+<p align="center">
+  <img alt="pry dashboard: machine list, views, host and driver details, protections and the tool-call log" src="assets/dashboard.png" width="100%">
+</p>
 
 ## Tools
 
